@@ -14,14 +14,20 @@
 #include "moremarkup.h"
 
 PLUGIN_VERSION_CHECK(GEANY_API_VERSION)
-PLUGIN_SET_INFO(_("MoreMarkup"), _("Provides More Markup"),
-    "0.1", _("Pik"))
 
-GeanyData *geany_data; 
+PLUGIN_SET_TRANSLATABLE_INFO(
+    LOCALEDIR,
+    GETTEXT_PACKAGE,
+    _("MoreMarkup"),
+    _("Provides More Markup"),
+    "0.1",
+    _("Pik"))
+
+GeanyData *geany_data;
 GeanyFunctions  *geany_functions;
 GeanyPlugin     *geany_plugin;
 
-typedef struct _MoreMarkupPrivate MoreMarkupPrivate; 
+typedef struct _MoreMarkupPrivate MoreMarkupPrivate;
 
 #define MORE_MARKUP_GET_PRIVATE(obj)    (G_TYPE_INSTANCE_GET_PRIVATE((obj), MORE_MARKUP_TYPE, MoreMarkupPrivate))
 
@@ -46,13 +52,13 @@ struct _MoreMarkupPrivate {
     GHashTable * g_hash_table_new;
 };
 
-/* Keybindings */ 
+/* Keybindings */
 /* TODO */
 
 /* state */
 enum
 {
-    PROP_0, 
+    PROP_0,
     PROP_PLUGIN_ACTIVE
 };
 
@@ -70,30 +76,30 @@ enum {
 };
 
 static void more_markup_finalize (GObject *object);
-static void more_markup_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec); 
+static void more_markup_set_property(GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 
-G_DEFINE_TYPE(MoreMarkup, more_markup, G_TYPE_OBJECT) 
+G_DEFINE_TYPE(MoreMarkup, more_markup, G_TYPE_OBJECT)
 
 MoreMarkup *mdock;
-MoreMarkupPrefs markup_prefs; 
+MoreMarkupPrefs markup_prefs;
 GtkWidget *plugin_menu_item;
 
 static void more_markup_class_init(MoreMarkupClass *cls) {
     g_warning("class init");
     GObjectClass *g_object_class;
     g_object_class = G_OBJECT_CLASS(cls);
-    g_object_class->finalize = more_markup_finalize; 
-    g_object_class->set_property = more_markup_set_property; 
-    
+    g_object_class->finalize = more_markup_finalize;
+    g_object_class->set_property = more_markup_set_property;
+
     g_type_class_add_private(cls, sizeof(MoreMarkupPrivate));
-    
-    g_object_class_install_property(g_object_class, 
-    PROP_PLUGIN_ACTIVE, 
+
+    g_object_class_install_property(g_object_class,
+    PROP_PLUGIN_ACTIVE,
     g_param_spec_boolean(
-    "plugin-active", 
-    "plugin-active", 
-    "Whether to show a docked toolbar for search", 
-    FALSE, 
+    "plugin-active",
+    "plugin-active",
+    "Whether to show a docked toolbar for search",
+    FALSE,
     G_PARAM_WRITABLE));
 }
 
@@ -110,7 +116,7 @@ static void more_markup_finalize(GObject *object) {
     }
     if (link != NULL) {
         do {
-            markup_label = link->data; 
+            markup_label = link->data;
             gtk_widget_destroy(markup_label->label_box);
             g_free(markup_label);
             link = g_list_delete_link(priv->active_marker_labels, link);
@@ -142,15 +148,15 @@ static gboolean label_unmark_cb(GtkWidget *label_box, GdkEventButton * event) {
     MoreMarkupPrivate *priv = MORE_MARKUP_GET_PRIVATE(self);
     GeanyDocument *doc = document_get_current();
     GList *link = priv->active_marker_labels;
-    struct MarkupLabel *markup_label; 
+    struct MarkupLabel *markup_label;
     if (doc == NULL) {
-        return TRUE; 
+        return TRUE;
     }
     if (link == NULL) {
         g_critical("We got a zombie label");
         return TRUE;
     }
-    do { 
+    do {
         markup_label = link->data;
         if (markup_label->label_box == label_box) {
             //g_warning("label_unmark_cb, labelbox %i, data->lpstrText s", label_box);
@@ -197,7 +203,7 @@ static void more_markup_get_range(GtkComboBox *combo, gint *markup_range) {
 }
 
 static gboolean markup_clear_all_cb(GtkWidget *clear_all_button, GtkWidget *where_menu) {
-    struct MarkupLabel *markup_label; 
+    struct MarkupLabel *markup_label;
     MoreMarkup *self = mdock;
     MoreMarkupPrivate *priv = MORE_MARKUP_GET_PRIVATE(self);
     gint markup_range;
@@ -209,7 +215,7 @@ static gboolean markup_clear_all_cb(GtkWidget *clear_all_button, GtkWidget *wher
         return TRUE;
     }
     while (link != NULL) {
-        markup_label = link->data; 
+        markup_label = link->data;
         if ((doc == markup_label->doc) && (markup_range == MM_MARK_IN_DOCUMENT)) {
             marker_indicator_clear(markup_label->doc->editor->sci, markup_label->indic_number);
             gtk_widget_destroy(markup_label->label_box);
@@ -217,7 +223,7 @@ static gboolean markup_clear_all_cb(GtkWidget *clear_all_button, GtkWidget *wher
             g_free(markup_label);
             //g_warning("link next: %i", link->next);
             temp = link;
-            link = link->next; 
+            link = link->next;
             priv->active_marker_labels = g_list_delete_link(priv->active_marker_labels, temp);
         }
         else if (markup_range == MM_MARK_IN_ALL_DOCS) {
@@ -226,7 +232,7 @@ static gboolean markup_clear_all_cb(GtkWidget *clear_all_button, GtkWidget *wher
             //g_free(markup_label->text);
             g_free(markup_label);
             temp = link;
-            link = link->next; 
+            link = link->next;
             priv->active_marker_labels = g_list_delete_link(priv->active_marker_labels, temp);
         }
         else {
@@ -242,32 +248,32 @@ static void markup_add_label(MarkerMatchInfo *info) {
     MoreMarkupPrivate *priv = MORE_MARKUP_GET_PRIVATE(self);
     if (info != NULL) {
         /* Duplicate the info since marker only stores the most recently marked entry */
-        
-        GtkWidget *frame = gtk_frame_new (NULL); 
+
+        GtkWidget *frame = gtk_frame_new (NULL);
         GtkWidget *label = gtk_label_new((gchar*)info->lpstrText);
         GtkToolItem *item = gtk_tool_item_new();
         GtkWidget *label_box = gtk_event_box_new();
-        
+
         gtk_widget_set_events(GTK_WIDGET(label_box), GDK_BUTTON_PRESS_MASK);
         gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_CENTER);
         gtk_container_add(GTK_CONTAINER(frame), GTK_WIDGET(label));
         gtk_container_add(GTK_CONTAINER(label_box), GTK_WIDGET(frame));
         gtk_container_add(GTK_CONTAINER(item), GTK_WIDGET(label_box));
         gtk_container_add(GTK_CONTAINER(priv->more_markup_bar), GTK_WIDGET(item));
-        
+
         markup_label->label_box = label_box;
         markup_label->indic_number = info->indic_number;
         markup_label->indic_style = info->indic_style;
         markup_label->sci_color = info->sci_color;
         markup_label->doc = info->doc;
-        
+
         /* Show only labels added for currently selected document */
         gtk_widget_show_all(GTK_WIDGET(item));
         if (document_get_current() != info->doc)
             gtk_widget_hide(GTK_WIDGET(label_box));
-        //g_warning("add_mark_up_label -- doc_current: %lli, %s, info->doc: %lli, info->indic: %i ", document_get_current(), info->lpstrText, info->doc, info->indic_number); 
+        //g_warning("add_mark_up_label -- doc_current: %lli, %s, info->doc: %lli, info->indic: %i ", document_get_current(), info->lpstrText, info->doc, info->indic_number);
         //markup_label->text = g_strdup(info->lpstrText);
-        
+
         priv->active_marker_labels = g_list_append(priv->active_marker_labels, markup_label);
         g_signal_connect(G_OBJECT(label_box), "button-press-event", G_CALLBACK(label_unmark_cb), NULL);
     }
@@ -277,7 +283,7 @@ static void markup_add_label(MarkerMatchInfo *info) {
 }
 
 static void on_indicator_cleared(GeanyDocument *doc, gint count) {
-    if (count != -1) { 
+    if (count != -1) {
         MarkerMatchInfo *info = get_last_marker_info();
         clear_markup_label(doc, info->indic_number);
         /* If text was marked */
@@ -298,21 +304,21 @@ static gboolean markup_set_cb(GtkWidget *mark_button, gint response, gpointer us
     GList *link;
     gint indic_number, indic_style, sci_color, markup_range, n;
     GeanyDocument *doc;
-    
+
     /* Get scintilla indicator */
     GtkComboBox *combo = GTK_COMBO_BOX(g_object_get_data(user_data, "indicator"));
     if (gtk_combo_box_get_active_iter( combo, &iter )) {
         model = gtk_combo_box_get_model(combo);
         gtk_tree_model_get( model, &iter, 0, &indic_style, -1 );
     }
-    
+
     /* get Gdk color */
     color_button = g_object_get_data(user_data, "color_button");
     gtk_color_button_get_color (GTK_COLOR_BUTTON(color_button), color);
     //g_warning("Got a color(rgb): %x %x %x", color->red, color->blue, color->green);
-    
+
     /* get entry text */
-    entry_text = g_strdup(gtk_entry_get_text(GTK_ENTRY(user_data))); 
+    entry_text = g_strdup(gtk_entry_get_text(GTK_ENTRY(user_data)));
 
     /* Get indicator number */
     indic_number = -1;
@@ -325,7 +331,7 @@ static gboolean markup_set_cb(GtkWidget *mark_button, gint response, gpointer us
         link = priv->active_marker_labels;
         if (link != NULL) {
             do {
-                    markup_label = link->data; 
+                    markup_label = link->data;
                     //g_warning("markuplabel->sci_color %i  sci_color  %i", markup_label->sci_color, sci_color);
                    /*
                     if (strcmp(markup_label->text, entry_text) != 0) {
@@ -346,7 +352,7 @@ static gboolean markup_set_cb(GtkWidget *mark_button, gint response, gpointer us
                     }
             } while ((link = g_list_next(link)) != NULL);
             /* Move this stuff */
-            if (indic_number < 0) { 
+            if (indic_number < 0) {
                 for (i=0; i<MM_DOCS_ARRAY; i++) {
                     if (priv->documents_table[i] == (gint64)doc) {
                         indic_number = priv->indic_numbers_table[i]++;
@@ -360,7 +366,7 @@ static gboolean markup_set_cb(GtkWidget *mark_button, gint response, gpointer us
                             indic_number = priv->indic_numbers_table[i]++;
                             break;
                         }
-                    } 
+                    }
                 }
             }
         }
@@ -368,7 +374,7 @@ static gboolean markup_set_cb(GtkWidget *mark_button, gint response, gpointer us
             for (i=0; i<MM_DOCS_ARRAY; i++) {
                 if (priv->documents_table[i] == 0) {
                     priv->documents_table[i] = (gint64)doc;
-                    indic_number = priv->indic_numbers_table[i]++; 
+                    indic_number = priv->indic_numbers_table[i]++;
                     break;
                 }
             }
@@ -378,16 +384,16 @@ static gboolean markup_set_cb(GtkWidget *mark_button, gint response, gpointer us
         indic_number = indic_style;
     }
     //g_warning("indic set %i", indic_number);
-    
+
     /* Indicator Alpha */
     gint alpha = (indic_style > 6 ? markup_prefs.default_box_alpha: 255);
-    
+
     /* Get Markup Range */
     combo = GTK_COMBO_BOX(g_object_get_data(user_data, "markup_range"));
     more_markup_get_range(combo, &markup_range);
-    
+
     /* Call appropriate set function */
-    gint count; 
+    gint count;
     //g_warning("markup_range %i", markup_range);
     if (markup_range == MM_MARK_IN_DOCUMENT) {
         doc = document_get_current();
@@ -411,41 +417,41 @@ static gboolean markup_set_cb(GtkWidget *mark_button, gint response, gpointer us
             on_indicator_cleared(doc, count);
         }
     }
-    
+
     //g_warning("marker_set_cb -- got count %i", count);
 
     g_free(entry_text);
     gdk_color_free(color);
-    
+
     /* If current indicator was cleared */
     return TRUE;
 }
 
 static GtkWidget *create_more_markup_bar(MoreMarkupPrefs *prefs) {
-   
+
     GtkWidget *toolbar, *indicator_menu, *color_button, *where_menu;
     GtkToolItem *mark, *clear_all;
     GtkEntry *entry;
     GtkToolItem *entry_item, *indicator_item, *color_item, *where_item;
-    
+
     /* initialize toolbar */
     toolbar = gtk_toolbar_new();
     gtk_toolbar_set_icon_size(GTK_TOOLBAR(toolbar), GTK_ICON_SIZE_MENU);
     gtk_toolbar_set_style(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_ICONS);
-    
+
     /* Mark and Clear-All buttons */
     mark = gtk_tool_button_new (NULL, "mark");
     clear_all= gtk_tool_button_new (NULL, "clear all");
-    
+
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), GTK_TOOL_ITEM(mark), -1);
     gtk_toolbar_insert(GTK_TOOLBAR(toolbar), GTK_TOOL_ITEM(clear_all), -1);
-    
+
     /* Text Entry */
     entry = GTK_ENTRY(gtk_entry_new_with_max_length(120));
     entry_item = gtk_tool_item_new();
     gtk_container_add(GTK_CONTAINER(entry_item), GTK_WIDGET(entry));
     gtk_container_add(GTK_CONTAINER(toolbar), GTK_WIDGET(entry_item));
-    
+
     /* Color Chooser for indicator color */
     color_item = gtk_tool_item_new();
     color_button = gtk_color_button_new();
@@ -453,10 +459,10 @@ static GtkWidget *create_more_markup_bar(MoreMarkupPrefs *prefs) {
     GdkColor color;
     gdk_color_parse(markup_prefs.default_color, &color);
     gtk_color_button_set_color (GTK_COLOR_BUTTON(color_button), &color);
-    
+
     gtk_container_add(GTK_CONTAINER(color_item), GTK_WIDGET(color_button));
     gtk_container_add(GTK_CONTAINER(toolbar), GTK_WIDGET(color_item));
-    
+
     /* Initialize combo-box for setting the Scintilla Indicator Type */
     GtkListStore *store = gtk_list_store_new (2, G_TYPE_INT, G_TYPE_STRING);
     GtkTreeIter iter;
@@ -467,8 +473,8 @@ static GtkWidget *create_more_markup_bar(MoreMarkupPrefs *prefs) {
     gtk_list_store_insert_with_values(store, &iter, -1, 0, INDIC_DIAGONAL, 1, "Diagonal", -1);
     gtk_list_store_insert_with_values(store, &iter, -1, 0, INDIC_STRIKE, 1, "Strike", -1);
     gtk_list_store_insert_with_values(store, &iter, -1, 0, INDIC_ROUNDBOX, 1, "RoundBox", -1);
-    
-    indicator_menu = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));  
+
+    indicator_menu = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     indicator_item  = gtk_tool_item_new();
     /* for now */
     gtk_combo_box_set_active_iter (GTK_COMBO_BOX(indicator_menu), &iter);
@@ -478,51 +484,51 @@ static GtkWidget *create_more_markup_bar(MoreMarkupPrefs *prefs) {
     gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( indicator_menu ), indic_cell, TRUE );
     /* Connect renderer to data source */
     gtk_cell_layout_set_attributes( GTK_CELL_LAYOUT( indicator_menu ), indic_cell, "text", 1, NULL );
-    
+
     gtk_container_add(GTK_CONTAINER(indicator_item), GTK_WIDGET(indicator_menu));
     gtk_container_add(GTK_CONTAINER(toolbar), GTK_WIDGET(indicator_item));
     g_object_unref(G_OBJECT(store));
     gtk_widget_show_all(indicator_menu);
-    
+
     /* Menu to specify marking behaviour (Mark in Doc, Mark in Selection, Mark across all Docs) */
-    GtkCellRenderer *where_cell; 
-    GtkListStore *where_store; 
+    GtkCellRenderer *where_cell;
+    GtkListStore *where_store;
     where_store = gtk_list_store_new(2, G_TYPE_INT, G_TYPE_STRING);
     gtk_list_store_insert_with_values(where_store, &iter, -1, 0, MM_MARK_IN_DOCUMENT, 1, "Mark in Document", -1);
     gtk_list_store_insert_with_values(where_store, &iter, -1, 0, MM_MARK_IN_SELECTION, 1, "Mark in Selection", -1);
     gtk_list_store_insert_with_values(where_store, &iter, -1, 0, MM_MARK_IN_ALL_DOCS, 1, "Mark in all Documents", -1);
-    
+
     where_item = gtk_tool_item_new();
-    where_menu = gtk_combo_box_new_with_model(GTK_TREE_MODEL(where_store));  
-    
+    where_menu = gtk_combo_box_new_with_model(GTK_TREE_MODEL(where_store));
+
     gtk_combo_box_set_active (GTK_COMBO_BOX(where_menu), 0);
 
     where_cell = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(where_menu),  where_cell, TRUE);
     gtk_cell_layout_set_attributes( GTK_CELL_LAYOUT( where_menu ), where_cell, "text", 1, NULL );
-    
+
     gtk_container_add(GTK_CONTAINER(where_item), GTK_WIDGET(where_menu));
     gtk_container_add(GTK_CONTAINER(toolbar), GTK_WIDGET(where_item));
     g_object_unref(G_OBJECT(where_store));
     gtk_widget_show_all(where_menu);
-     
-    
-    /* Set context for entry */ 
+
+
+    /* Set context for entry */
     g_object_set_data(G_OBJECT(entry), "color_button", color_button);
     g_object_set_data(G_OBJECT(entry), "indicator", indicator_menu);
     g_object_set_data(G_OBJECT(entry), "markup_range", where_menu);
-    
-    /* Connect Signals */ 
+
+    /* Connect Signals */
     g_signal_connect(G_OBJECT(mark), "clicked", G_CALLBACK(markup_set_cb), entry);
     g_signal_connect(G_OBJECT(clear_all), "clicked", G_CALLBACK(markup_clear_all_cb), where_menu);
-    
+
     return toolbar;
 }
 
 static void more_markup_toggle_cb(GtkWidget *btn) {
     MoreMarkup *self = mdock;
     GtkWidget *vbox = ui_lookup_widget(geany_data->main_widgets->window, "vbox1");
-    MoreMarkupPrivate *priv = MORE_MARKUP_GET_PRIVATE(self); 
+    MoreMarkupPrivate *priv = MORE_MARKUP_GET_PRIVATE(self);
     priv->visible = !priv->visible;
     g_warning("visible set %i, more_markup_bar %lli, toolbar_item %lli", priv->visible, priv->more_markup_bar, priv->toolbar_more_markup_button);
     if (priv->more_markup_bar != NULL) {
@@ -546,7 +552,7 @@ static void more_markup_toolbar_update(MoreMarkup *self) {
     }
     else {
         if (priv->toolbar_more_markup_button == NULL) {
-            priv->toolbar_more_markup_button = gtk_tool_button_new(NULL, "More Markup"); 
+            priv->toolbar_more_markup_button = gtk_tool_button_new(NULL, "More Markup");
             plugin_add_toolbar_item(geany_plugin, priv->toolbar_more_markup_button);
             ui_add_document_sensitive(GTK_WIDGET(priv->toolbar_more_markup_button));
             g_signal_connect(GTK_WIDGET(priv->toolbar_more_markup_button), "clicked", G_CALLBACK(more_markup_toggle_cb), self);
@@ -573,14 +579,14 @@ static void more_markup_set_property(GObject *object, guint prop_id, const GValu
 static void on_document_activate(GObject *geany_object, GeanyDocument *doc, MoreMarkup *self) {
     //g_warning("on_document_activate %i", doc);
     MoreMarkupPrivate *priv = MORE_MARKUP_GET_PRIVATE(self);
-    struct MarkupLabel *markup_label; 
-    GList *link = priv->active_marker_labels; 
+    struct MarkupLabel *markup_label;
+    GList *link = priv->active_marker_labels;
     if (link == NULL) return;
     do {
         markup_label = link->data;
         if (markup_label->doc == doc) {
             //g_warning("gtk_widget_show markup_label->doc == doc");
-            gtk_widget_show(markup_label->label_box); 
+            gtk_widget_show(markup_label->label_box);
         }
         else {
             gtk_widget_hide(markup_label->label_box);
@@ -590,20 +596,20 @@ static void on_document_activate(GObject *geany_object, GeanyDocument *doc, More
 
 static void on_document_close(GObject *geany_object, GeanyDocument *doc, MoreMarkup *self) {
     MoreMarkupPrivate *priv = MORE_MARKUP_GET_PRIVATE(self);
-    struct MarkupLabel *markup_label; 
-    GList *link = priv->active_marker_labels; 
+    struct MarkupLabel *markup_label;
+    GList *link = priv->active_marker_labels;
     guint i;
     if (link == NULL) return;
     do {
         markup_label = link->data;
         if (markup_label->doc == doc) {
-            gtk_widget_destroy(markup_label->label_box); 
+            gtk_widget_destroy(markup_label->label_box);
             //g_free(markup_label->text);
             g_free(markup_label);
             priv->active_marker_labels = g_list_delete_link(priv->active_marker_labels, link);
         }
     } while((link = g_list_next(link)) != NULL);
-    
+
     /* Remove document indicator count from list */
     for (i=0; i< MM_DOCS_ARRAY; i++) {
         if (priv->documents_table[i] == (gint64)doc) {
@@ -635,12 +641,12 @@ static void more_markup_init(MoreMarkup *self)
     more_markup_prefs_init(&markup_prefs);
     marker_data_init();
     priv->toolbar_more_markup_button = NULL;
-    priv->visible = FALSE; 
+    priv->visible = FALSE;
     priv->more_markup_bar = create_more_markup_bar(&markup_prefs);
     priv->indic_numbers_table = calloc(MM_DOCS_ARRAY, sizeof(int));
     priv->documents_table = calloc(MM_DOCS_ARRAY, sizeof(int));
     //priv->indic_numbers_table = g_hash_table_new(g_int_hash, g_int_equal);
-    
+
     /* Make it bigger than any default scintilla style */
     more_markup_connect_signals(self);
     GtkWidget *vbox = ui_lookup_widget(geany_data->main_widgets->window, "vbox1");
@@ -654,7 +660,7 @@ MoreMarkup *more_markup_new(gboolean plugin_active) {
 }
 
 GtkWidget* find_child(GtkWidget* parent, const gchar* name) {
-    if (g_strcasecmp(gtk_widget_get_name((GtkWidget*)parent), (gchar*)name) == 0) { 
+    if (g_strcasecmp(gtk_widget_get_name((GtkWidget*)parent), (gchar*)name) == 0) {
             return parent;
     }
 
@@ -683,7 +689,7 @@ static void on_configure_response(GtkDialog *dialog, gint response, GtkWidget *v
     GtkTreeModel *model;
     GtkComboBox *combo = GTK_COMBO_BOX(find_child(GTK_WIDGET(vbox), "default_on_mark"));
     GtkSpinButton *spin = GTK_SPIN_BUTTON(find_child(GTK_WIDGET(vbox), "default_box_alpha"));
-    
+
     if( gtk_combo_box_get_active_iter(combo, &iter)) {
         model = gtk_combo_box_get_model( combo );
         gtk_tree_model_get( model, &iter, 0, &markup_prefs.default_on_mark, -1 );
@@ -713,8 +719,8 @@ GtkWidget *plugin_configure(GtkDialog *dialog)
     gtk_list_store_insert_with_values(store, &iter, -1, 0, MM_DEFAULT_NEXT_IF_COLOR, 1, "Set a new marker of the same type if a different color is selected", -1);
     /* TODO */
     //gtk_list_store_insert_with_values(store, &iter, -1, 0, MM_DEFAULT_NEXT_COLOR_AUTO, 1, "Autoincrement in the color and set a new marker ", -1);
-    
-    configure_combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));  
+
+    configure_combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
     /* for now */
     gtk_combo_box_set_active (GTK_COMBO_BOX(configure_combo), markup_prefs.default_on_mark);
     /* Create cell renderer. */
@@ -723,23 +729,23 @@ GtkWidget *plugin_configure(GtkDialog *dialog)
     gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( configure_combo ), cell, TRUE );
     /* Connect renderer to data source */
     gtk_cell_layout_set_attributes( GTK_CELL_LAYOUT( configure_combo ), cell, "text", 1, NULL );
-    
+
     GtkWidget *align =  gtk_alignment_new(0,0,1,0);
     gtk_container_add(GTK_CONTAINER(align), GTK_WIDGET(configure_combo));
     gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(align));
-    
+
     adj = gtk_adjustment_new(((gdouble)markup_prefs.default_box_alpha)/255, 0, 1.0, .01, 0.1, 0);
     spin = gtk_spin_button_new(GTK_ADJUSTMENT(adj), .01, 2);
     alpha_label = gtk_label_new(_("Set Default Box alpha:"));
     gtk_misc_set_alignment(GTK_MISC(alpha_label), 0, 1);
-    
+
     gtk_container_add(GTK_CONTAINER(vbox), alpha_label);
     gtk_container_add(GTK_CONTAINER(vbox), spin);
-    
+
     gtk_widget_set_name(GTK_WIDGET(configure_combo), "default_on_mark");
     gtk_widget_set_name(GTK_WIDGET(spin), "default_box_alpha");
     //g_warning("Spin name %s", gtk_widget_get_name(GTK_WIDGET(spin)));
-    
+
     gtk_widget_show_all(vbox);
 
     /* Connect a callback for when the user clicks a dialog button */
@@ -747,7 +753,7 @@ GtkWidget *plugin_configure(GtkDialog *dialog)
     return vbox;
 }
 
-void plugin_init(GeanyData *data) { 
+void plugin_init(GeanyData *data) {
     mdock = more_markup_new(TRUE); //plugin-active, visible
     plugin_module_make_resident(geany_plugin);
 }

@@ -224,6 +224,12 @@ git-changebar/src/gcb-plugin.c
 markdown/src/conf.c
 markdown/src/plugin.c
 
+# moremarkup
+moremarkup/src/marker.c
+moremarkup/src/marker.h
+moremarkup/src/moremarkup.c
+moremarkup/src/moremarkup.h
+
 # Pairtaghighlighter
 pairtaghighlighter/src/pair_tag_highlighter.c
 
